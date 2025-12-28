@@ -1,0 +1,141 @@
+import discord
+from discord.ext import commands
+import random
+
+# ====== SETUP BOT ======
+intents = discord.Intents.default()
+intents.message_content = True
+
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# ====== LEADERBOARD (IN-MEMORY) ======
+leaderboard_data = {}
+
+# ====== SOAL KUIS ======
+quiz_questions = [
+    {"question": "Apa ibu kota Provinsi Aceh?", "options": ["A. Banda Aceh", "B. Lhokseumawe", "C. Langsa", "D. Sabang"], "answer": "A"},
+    {"question": "Apa ibu kota Provinsi Sumatera Utara?", "options": ["A. Medan", "B. Padang", "C. Pekanbaru", "D. Binjai"], "answer": "A"},
+    {"question": "Apa ibu kota Provinsi Sumatera Barat?", "options": ["A. Bukittinggi", "B. Padang", "C. Pariaman", "D. Solok"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Riau?", "options": ["A. Dumai", "B. Bengkalis", "C. Pekanbaru", "D. Siak"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Kepulauan Riau?", "options": ["A. Batam", "B. Tanjungpinang", "C. Karimun", "D. Natuna"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Jambi?", "options": ["A. Sungai Penuh", "B. Muara Bungo", "C. Jambi", "D. Sarolangun"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Sumatera Selatan?", "options": ["A. Lubuklinggau", "B. Prabumulih", "C. Palembang", "D. Pagar Alam"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Lampung?", "options": ["A. Metro", "B. Bandar Lampung", "C. Kotabumi", "D. Kalianda"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Banten?", "options": ["A. Tangerang", "B. Serang", "C. Cilegon", "D. Pandeglang"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi DKI Jakarta?", "options": ["A. Jakarta", "B. Depok", "C. Bekasi", "D. Bogor"], "answer": "A"},
+    {"question": "Apa ibu kota Provinsi Jawa Barat?", "options": ["A. Jakarta", "B. Bandung", "C. Bekasi", "D. Bogor"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Jawa Tengah?", "options": ["A. Solo", "B. Yogyakarta", "C. Semarang", "D. Magelang"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi DI Yogyakarta?", "options": ["A. Sleman", "B. Bantul", "C. Yogyakarta", "D. Kulon Progo"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Jawa Timur?", "options": ["A. Malang", "B. Kediri", "C. Surabaya", "D. Blitar"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Bali?", "options": ["A. Gianyar", "B. Singaraja", "C. Denpasar", "D. Kuta"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Nusa Tenggara Barat?", "options": ["A. Bima", "B. Mataram", "C. Dompu", "D. Sumbawa"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Nusa Tenggara Timur?", "options": ["A. Atambua", "B. Maumere", "C. Kupang", "D. Ende"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Kalimantan Barat?", "options": ["A. Singkawang", "B. Pontianak", "C. Sambas", "D. Ketapang"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Kalimantan Tengah?", "options": ["A. Sampit", "B. Palangka Raya", "C. Pangkalan Bun", "D. Kuala Kapuas"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Kalimantan Selatan?", "options": ["A. Banjarbaru", "B. Banjarmasin", "C. Martapura", "D. Kandangan"], "answer": "A"},
+    {"question": "Apa ibu kota Provinsi Kalimantan Timur?", "options": ["A. Balikpapan", "B. Samarinda", "C. Bontang", "D. Tenggarong"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Kalimantan Utara?", "options": ["A. Tarakan", "B. Tanjung Selor", "C. Nunukan", "D. Malinau"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Sulawesi Selatan?", "options": ["A. Parepare", "B. Palopo", "C. Makassar", "D. Maros"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Sulawesi Tengah?", "options": ["A. Palu", "B. Poso", "C. Luwuk", "D. Donggala"], "answer": "A"},
+    {"question": "Apa ibu kota Provinsi Sulawesi Utara?", "options": ["A. Tomohon", "B. Bitung", "C. Manado", "D. Kotamobagu"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Sulawesi Tenggara?", "options": ["A. Kendari", "B. Bau-Bau", "C. Kolaka", "D. Raha"], "answer": "A"},
+    {"question": "Apa ibu kota Provinsi Gorontalo?", "options": ["A. Limboto", "B. Gorontalo", "C. Boalemo", "D. Bone Bolango"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Sulawesi Barat?", "options": ["A. Majene", "B. Polewali", "C. Mamuju", "D. Mamasa"], "answer": "C"},
+    {"question": "Apa ibu kota Provinsi Maluku?", "options": ["A. Tual", "B. Ambon", "C. Masohi", "D. Dobo"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Maluku Utara?", "options": ["A. Sofifi", "B. Ternate", "C. Tidore", "D. Tobelo"], "answer": "A"},
+    {"question": "Apa ibu kota Provinsi Papua?", "options": ["A. Timika", "B. Jayapura", "C. Merauke", "D. Nabire"], "answer": "B"},
+    {"question": "Apa ibu kota Provinsi Papua Barat?", "options": ["A. Fakfak", "B. Manokwari", "C. Sorong", "D. Kaimana"], "answer": "B"}
+]
+
+# ====== EVENT ======
+@bot.event
+async def on_ready():
+    print(f"Bot siap sebagai {bot.user}")
+
+# ====== COMMAND KUIS ======
+@bot.command()
+async def kuis(ctx):
+    score = 0
+    questions = quiz_questions.copy()
+    random.shuffle(questions)
+
+    await ctx.send("🇮🇩 **KUIS IBU KOTA PROVINSI INDONESIA** 🇮🇩")
+    await ctx.send("Ketik **STOP** kapan saja untuk berhenti.")
+
+    for q in questions:
+        embed = discord.Embed(
+            title="📝 Pertanyaan",
+            description=q["question"],
+            color=discord.Color.green()
+        )
+
+        for option in q["options"]:
+            embed.add_field(name="\u200b", value=option, inline=False)
+
+        await ctx.send(embed=embed)
+        await ctx.send("Jawab **A / B / C / D** atau **STOP** (20 detik)")
+
+        def check(m):
+            return (
+                m.author == ctx.author and
+                m.channel == ctx.channel and
+                m.content.upper() in ["A", "B", "C", "D", "STOP"]
+            )
+
+        try:
+            msg = await bot.wait_for("message", check=check, timeout=20)
+        except:
+            await ctx.send("⏰ Waktu habis!")
+            continue
+
+        if msg.content.upper() == "STOP":
+            await ctx.send("🛑 Kuis dihentikan.")
+            break
+        elif msg.content.upper() == q["answer"]:
+            await ctx.send("✅ Benar!")
+            score += 1
+        else:
+            await ctx.send(f"❌ Salah! Jawaban benar: **{q['answer']}**")
+
+    # ====== SIMPAN KE LEADERBOARD ======
+    user_id = ctx.author.id
+    username = ctx.author.display_name
+
+    if user_id not in leaderboard_data or score > leaderboard_data[user_id]["score"]:
+        leaderboard_data[user_id] = {
+            "name": username,
+            "score": score
+        }
+
+    await ctx.send(f"🎉 **Kuis selesai!**\nSkor kamu: **{score}**")
+
+# ====== COMMAND LEADERBOARD ======
+@bot.command()
+async def leaderboard(ctx):
+    if not leaderboard_data:
+        await ctx.send("📊 Leaderboard masih kosong. Main kuis dulu 😄")
+        return
+
+    sorted_lb = sorted(
+        leaderboard_data.values(),
+        key=lambda x: x["score"],
+        reverse=True
+    )[:10]
+
+    embed = discord.Embed(
+        title="🏆 LEADERBOARD KUIS IBU KOTA",
+        color=discord.Color.gold()
+    )
+
+    for i, user in enumerate(sorted_lb, start=1):
+        medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else "🔹"
+        embed.add_field(
+            name=f"{medal} {i}. {user['name']}",
+            value=f"Skor: **{user['score']}**",
+            inline=False
+        )
+
+    await ctx.send(embed=embed)
+
+# ====== TOKEN ======
+bot.run("TOKEN_KAMU_DI_SINI")
